@@ -1,0 +1,169 @@
+---
+title: 'Homework 05: Factor and figure management'
+author: "Roger Yu-Hsiang Lo"
+date: '2018-10-19'
+output:
+  github_document:
+    toc: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.align = 'center')
+```
+
+## Bring rectangular data in
+
+- Load `Gapminder` and `tidyverse`:
+```{r}
+library(gapminder)
+library(tidyverse)
+```
+
+- Some sanity check to make sure the `Gapminder` data was loaded properly:
+```{r}
+head(gapminder) %>%
+  knitr::kable()
+```
+
+## Part 1: Factor management
+
+We first check some general information about the `Gapminder` dataset before manipulating it.
+
+```{r}
+gapminder %>%
+  str()
+```
+
+It is easy to see that the variables `country` and `continent` are both factors with 142 and 5 levels respectively.
+
+### Data sorting using `arrange()` on numeric variables
+
+We first explore the effects of the `arrange()` functions. In the following code, we attempt to sort the data by the mean life expectancy in 2007 for each continent:
+
+```{r}
+gap_meanLifeExp_1 <- gapminder %>%
+  filter(year == 2007) %>%
+  group_by(continent) %>%
+  summarize(meanLifeExp = mean(lifeExp)) %>%
+  arrange(meanLifeExp)  # Arrange the row according to meanLifeExp
+
+knitr::kable(gap_meanLifeExp_1)
+```
+
+
+From the resulting table, it seems that the `arrange()` function does have an effect on the output data frame, as the order of the continents is now following the increasing order of the mean life expectancy.
+
+
+However, if we use the resulting data frame for a figure, it is obvious that the arragement of the bars follows the alphabetical order of the names of the continents, rather than the order of the mean life expectancy:
+
+
+```{r}
+gap_meanLifeExp_1 %>%
+  ggplot(aes(x = continent, y = meanLifeExp)) +
+  geom_bar(stat = "identity")
+```
+
+### Data sorting using `arrange()` on factor variables
+
+Instead of sorting the data using a numeric variable, we now attempt to sort the data using a categorical variable (i.e., a factor). To demonstrate, let us sort the data by continents in the reverse alphabetical order. This can be done by using `arrange()` in combination with `desc()`, as shown in the following code:
+
+```{r}
+gap_meanLifeExp_2 <- gapminder %>%
+  filter(year == 2007) %>%
+  group_by(continent) %>%
+  summarize(meanLifeExp = mean(lifeExp)) %>%
+  arrange(desc(continent))
+
+knitr::kable(gap_meanLifeExp_2)
+```
+
+It appears that the data frame now is ordered as intented, but when we feed this data frame into a figure, the intented order is not reflected in the resulting figure:
+
+```{r}
+gap_meanLifeExp_2 %>%
+  ggplot(aes(x = continent, y = meanLifeExp)) +
+  geom_bar(stat = "identity")
+```
+
+### Factor and level dropping
+
+From the `Gapminder`, we now drop the observations associated with Oceania in variable `continent`. Using the `str()` function, we can see that even after dropping these observations, the levels in the factor varialbes `continent` and `country` remain the same as in the original data set (5 and 142 levels respectively):
+
+```{r}
+gap_no_oceania <- gapminder %>%
+  filter(continent != "Oceania")
+  
+str(gap_no_oceania)
+```
+
+However, the total number of rows in the data frame is now different (1680 vs. 1704).
+
+Now we explore the effects of two similar functions: `droplevels()` and `fct_drop()`. With `droplevels()`, the function goes through each factor variables and eliminate the levels that do not appears in any observations. In this case, `continent` now only has 4 levels (i.e., Oceania is now gone), and `country` now has 140 levels (i.e., Australia and New Zealand are dropped).
+
+```{r}
+gap_no_oceania %>%
+  droplevels() %>%
+  str()
+```
+
+With `fct_drop()`, however, we can specify the variable whose levels we want to drop. In the following example, we drop the used level in `continent`. Notice that `continent` now has only 4 levels, but `country` still has 142 levels.
+
+```{r}
+gap_no_oceania %>%
+  mutate(continent = fct_drop(continent)) %>%
+  str()
+```
+
+### Reordering levels of factor variables
+
+We have seen that, if we want to present data in a tabular format, we can using `arrange()` to do this. However, if we want the same order to appear in a plot, we need to use `fct_reorder()` or `fct_reorder2()`. To illustrate the functions, we make a plot that shows the growth in life expectancy from 1952 to 2007 in Asian countries, with the order of the countries based on the amount of growth.
+
+First, we create a data frame that contains a variable `growth` showing the difference in life expectancy between 2007 and 1952. Furthermore, we arrange the order of `country` with reference to `growth` using `fct_reorder`.
+
+```{r}
+gap_growth <- gapminder %>%
+  filter(year %in% c(1952, 2007), continent == "Asia") %>%
+  # Rename 1952 to "earlier" and 2007 to "later" because we are going to spread year
+  # and the resulting new columns with numerals as the names will cause trouble for following manipulations
+  mutate(year = if_else(year == 1952, "earlier", "later")) %>%
+  select(country, year, lifeExp) %>%
+  spread(key = year, value = lifeExp) %>%
+  mutate(growth = later - earlier, country = fct_reorder(country, growth))
+
+knitr::kable(gap_growth)
+```
+
+Notice that this time the data frame appears to be arranged differently than expected: it is still ordered by the variable `country` rather than by `growth`. However, when we use the same data frame to generate a plot, the bars are arranged as intended:
+
+```{r}
+gap_growth %>%
+  ggplot(aes(y = growth, x = country)) +
+  theme_bw() +
+  geom_col() +
+  geom_point(aes(y = later, x = country, color = "Life exp. in 2007")) +  # We need to add points manually because of the data frame structure
+  geom_point(aes(y = earlier, x = country, color = "Life exp. in 1952")) +
+  labs(title = "Growth in life expectancy in Asian countries", x = "Country", y = "Age (year)") +
+  scale_color_manual(name = "", values = c("Life exp. in 2007" = "#00BFC4", "Life exp. in 1952" = "#F8766D")) +  # Manually add legend
+  coord_flip() +
+  theme(legend.position = "bottom")
+```
+
+From the plot, we can immediately see that Oman is the country that has the most significant growth in life expectancy, while Iraq saw the smallest growth among Asian countries.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
