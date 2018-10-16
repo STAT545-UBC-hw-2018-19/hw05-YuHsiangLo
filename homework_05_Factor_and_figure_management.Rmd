@@ -2,6 +2,7 @@
 title: 'Homework 05: Factor and figure management'
 author: "Roger Yu-Hsiang Lo"
 date: '2018-10-19'
+always_allow_html: yes
 output:
   github_document:
     toc: true
@@ -192,10 +193,93 @@ Once again, the type has changed from `factor` to `integer`. We will need to use
 
 ## Part 3: Visualization design
 
+### Pretty plots up
+
+For this part, I remade one of the plots from Homework 04 that shows the life expectancy growth in different continents. The vanilla plot output by `ggplot2` with defaults values is as follows. Also, local regression LOESS (locally estimated scatterplot smoothing) is used for plotting the lines.
+
+```{r}
+gapminder %>%
+  group_by(country) %>%
+  mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%  # Calculate the growth compared to the previous year
+  filter(year != 1952, continent != "Oceania") %>%  # Remove NA values and data from Oceania
+  ggplot(aes(x = year, y = growth_lifeExp, color = continent)) +
+  facet_wrap(~continent) + 
+  geom_jitter() +
+  geom_smooth(method = "loess")  # Fit regression lines
+```
+
+Then a few tweaks were added to the plot:
+
+1. The theme `Solarized` from `ggthemes` was used instead (`Solarized` is a sixteen color palette designed for use with terminal and gui applications).
+2. Changed `alpha` in `geom_jitter` to a lower value, so that the points would not appear clustering all together.
+3. Changed the ticks of the `x` axis to match the years in the `Gapminder` dataset.
+4. Changed the limits of the `y` axis to make the declining trend more visible. This of course implies that some data points are not shown in the plot.
+5. Relabeled the titles of the axises and added a plot title.
+6. Changed the colors associated with continents to the ones packaged along with `Gapminder`.
+7. Removed the legend as the same information has been conveyed by the facet titles.
+8. Centered the plot title.
+
+```{r}
+#install.packages("ggthemes")
+library(ggthemes)
+
+gapminder %>%
+  group_by(country) %>%
+  mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%  # Calculate the growth compared to the previous year
+  filter(year != 1952, continent != "Oceania") %>%  # Remove NA values and data from Oceania
+  ggplot(aes(x = year, y = growth_lifeExp, color = continent)) +
+  facet_wrap(~continent) +
+  geom_jitter(alpha = 0.1) +
+  geom_smooth(method = "loess") +  # Fit regression lines
+  scale_x_continuous(breaks = seq(1957, 2007, 10)) +
+  coord_cartesian(ylim=c(-2, 4)) +
+  labs(x = 'Year', y = 'Life expectancy growth (years)', title = 'Growth in life expectancy') +
+  theme_solarized() +
+  scale_color_manual(values = continent_colors) +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.position = "none"
+    )
+```
+
+### Plot with `plotly`
+
+(Unfortunately, GitHub-flavored Markdown doesn't support `plotly` graphs, so you'll have to open the html file to enjoy its features...)
+
+We can convert the plot above to a `plotly` graph. With a `plotly` graph, the user can interact with the graph by hovering over a point to see its values, zooming in and out, and panning around, among others.
+
+```{r}
+library(plotly)
+
+p <- gapminder %>%
+  group_by(country) %>%
+  mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%  # Calculate the growth compared to the previous year
+  filter(year != 1952, continent != "Oceania") %>%  # Remove NA values and data from Oceania
+  ggplot(aes(x = year, y = growth_lifeExp, color = continent)) +
+  facet_wrap(~continent) +
+  geom_jitter(alpha = 0.1) +
+  geom_smooth(method = "loess") +  # Fit regression lines
+  scale_x_continuous(breaks = seq(1957, 2007, 10)) +
+  coord_cartesian(ylim=c(-2, 4)) +
+  labs(x = 'Year', y = 'Life expectancy growth (years)', title = 'Growth in life expectancy') +
+  theme_solarized() +
+  scale_color_manual(values = continent_colors) +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "none")
+
+ggplotly(p)
+```
+
 ## Part 4: Writing figures to file
 
+```{r}
+library(svglite)
+ggsave(filename = "./plots/growth.svg", plot = p, units = "cm", height = 10, width = 15)
+ggsave(filename = "./plots/growth.png", plot = p, units = "cm", height = 10, width = 15)
+```
 
-
+![.svg](./plots/growth.svg) image
+![.png](./plots/growth.png) image
 
 
 
