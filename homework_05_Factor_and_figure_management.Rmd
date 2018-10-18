@@ -47,7 +47,7 @@ gap_meanLifeExp_1 <- gapminder %>%
   filter(year == 2007) %>%
   group_by(continent) %>%
   summarize(meanLifeExp = mean(lifeExp)) %>%
-  arrange(meanLifeExp)  # Arrange the row according to meanLifeExp
+  arrange(meanLifeExp)
 
 knitr::kable(gap_meanLifeExp_1)
 ```
@@ -142,7 +142,7 @@ gap_growth %>%
   geom_point(aes(y = `2007`, x = country, color = "Life exp. in 2007")) +  # We need to add points manually because of the data frame structure
   geom_point(aes(y = `1952`, x = country, color = "Life exp. in 1952")) +
   labs(title = "Growth in life expectancy in Asian countries", x = "Country", y = "Age (year)") +
-  scale_color_manual(name = "", values = c("Life exp. in 2007" = "#00BFC4", "Life exp. in 1952" = "#F8766D")) +  # Manually add legend
+  scale_color_manual(name = "", values = c("Life exp. in 2007" = "#00BFC4", "Life exp. in 1952" = "#F8766D")) +
   coord_flip() +
   theme(legend.position = "bottom")
 ```
@@ -201,7 +201,7 @@ For this part, I remade one of the plots from Homework 04 that shows the life ex
 gapminder %>%
   group_by(country) %>%
   mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%  # Calculate the growth compared to the previous year
-  filter(year != 1952, continent != "Oceania") %>%  # Remove NA values and data from Oceania
+  filter(year != 1952, continent != "Oceania") %>%
   ggplot(aes(x = year, y = growth_lifeExp, color = continent)) +
   facet_wrap(~continent) + 
   geom_jitter() +
@@ -225,12 +225,12 @@ library(ggthemes)
 
 gapminder %>%
   group_by(country) %>%
-  mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%  # Calculate the growth compared to the previous year
-  filter(year != 1952, continent != "Oceania") %>%  # Remove NA values and data from Oceania
+  mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%
+  filter(year != 1952, continent != "Oceania") %>%
   ggplot(aes(x = year, y = growth_lifeExp, color = continent)) +
   facet_wrap(~continent) +
   geom_jitter(alpha = 0.1) +
-  geom_smooth(method = "loess") +  # Fit regression lines
+  geom_smooth(method = "loess") +
   scale_x_continuous(breaks = seq(1957, 2007, 10)) +
   coord_cartesian(ylim=c(-2, 4)) +
   labs(x = 'Year', y = 'Life expectancy growth (years)', title = 'Growth in life expectancy') +
@@ -244,8 +244,6 @@ gapminder %>%
 
 ### Plot with `plotly`
 
-(Unfortunately, GitHub-flavored Markdown doesn't support `plotly` graphs, so you'll have to open the html file to enjoy its features...)
-
 We can convert the plot above to a `plotly` graph. With a `plotly` graph, the user can interact with the graph by hovering over a point to see its values, zooming in and out, and panning around, among others.
 
 ```{r}
@@ -253,12 +251,12 @@ library(plotly)
 
 p <- gapminder %>%
   group_by(country) %>%
-  mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%  # Calculate the growth compared to the previous year
-  filter(year != 1952, continent != "Oceania") %>%  # Remove NA values and data from Oceania
+  mutate(growth_lifeExp = lifeExp - lag(lifeExp)) %>%
+  filter(year != 1952, continent != "Oceania") %>%
   ggplot(aes(x = year, y = growth_lifeExp, color = continent)) +
   facet_wrap(~continent) +
   geom_jitter(alpha = 0.1) +
-  geom_smooth(method = "loess") +  # Fit regression lines
+  geom_smooth(method = "loess") +
   scale_x_continuous(breaks = seq(1957, 2007, 10)) +
   coord_cartesian(ylim=c(-2, 4)) +
   labs(x = 'Year', y = 'Life expectancy growth (years)', title = 'Growth in life expectancy') +
